@@ -1,8 +1,11 @@
 import React, { useState } from 'react';
 // 1. Import logo Anda di sini
 import logoApp from './assets/tirtanadi-transparant.png';
+import Dashboard from './Dashboard';
 
 function App() {
+const [isLoggedIn, setIsLoggedIn] = useState(false);
+const [userData, setUserData] = useState(null);
 const [username, setUsername] = useState('');
 const [password, setPassword] = useState('');
 const [loading, setLoading] = useState(false);
@@ -19,32 +22,47 @@ const scriptURL =
 'https://script.google.com/macros/s/AKfycbxwajPcxZHhZGQFgIM9fZ1J28of7T5zKpsxF4JxTkRWIQuiJyowpQTle4fgUM1ZBrzB/exec';
 
 try {
-const response = await fetch(scriptURL, {
-method: 'POST',
-// Sesuai dengan GAS: mengirim "username" bukan "email"
-body: JSON.stringify({ username, password }),
-});
+  const response = await fetch(scriptURL, {
+    method: 'POST',
+    body: JSON.stringify({ username, password }),
+  });
 
-const result = await response.json();
+  const result = await response.json();
 
-if (result.status === 'success') {
-// Login Berhasil
-alert("Login Berhasil! Selamat datang " + result.user.nama);
-// Simpan data user ke localStorage jika perlu (opsional)
-localStorage.setItem('user_session', JSON.stringify(result.user));
+  if (result.status === 'success') {
+    // 1. SIMPAN KE STATE (WAJIB agar tampilan berpindah)
+    setUserData(result.user); 
+    setIsLoggedIn(true); 
 
-// Arahkan ke Dashboard
-// window.location.href = '/dashboard';
-} else {
-// Menampilkan pesan error dari database (misal: "User atau Password salah")
-setErrorMsg(result.message || "User atau Password salah");
-}
+    // 2. Notifikasi
+    alert("Login Berhasil! Selamat datang " + result.user.nama);
+
+    // 3. Simpan ke localStorage (Opsional untuk persistent login)
+    localStorage.setItem('user_session', JSON.stringify(result.user));
+
+  } else {
+    // Menampilkan pesan error dari database
+    setErrorMsg(result.message || "User atau Password salah");
+  }
 } catch (error) {
-setErrorMsg("Koneksi gagal. Pastikan IP Public aktif.");
+  setErrorMsg("Koneksi gagal. Pastikan IP Public aktif.");
 } finally {
-setLoading(false);
+  setLoading(false);
 }
 };
+
+const handleLogout = () => {
+    setIsLoggedIn(false);
+    setUserData(null);
+    // Bersihkan form agar aman
+    setUsername('');
+    setPassword('');
+  };
+
+  // LOGIKA PERGANTIAN HALAMAN
+  if (isLoggedIn) {
+    return <Dashboard userData={userData} onLogout={handleLogout} />;
+  }
 
 return (
 <div className="min-h-screen bg-slate-50 flex flex-col justify-center px-6 py-12">
@@ -95,7 +113,7 @@ return (
             <form className="space-y-6" onSubmit={handleLogin}>
                 {/* Input Email/Username */}
                 <div>
-                    <label className="block text-sm font-medium text-slate-800">
+                    <label className="block text-sm font-medium text-slate-700">
                         Username
                     </label>
                     <div className="mt-1">
