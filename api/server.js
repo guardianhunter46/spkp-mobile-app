@@ -60,7 +60,7 @@ app.get('/users', async (req, res) => {
         let pool = await sql.connect(dbConfig);
         let result = await pool.request()
             .input('cabangParam', sql.VarChar, cabang)
-            .query('SELECT username, role, pelaksana FROM spkp_users WHERE cabang = @cabangParam');
+            .query('SELECT username, role, pelaksana, cabang, kocab FROM spkp_users WHERE cabang = @cabangParam');
 
         res.json({ status: 'success', data: result.recordset });
     } catch (err) {
@@ -78,8 +78,73 @@ app.get('/list-cabang', async (req, res) => {
 
         res.json({ 
             status: 'success', 
-            data: result.recordset.map(item => item.cabang) // Mengubah array objek menjadi array string
+            data: result.recordset
         });
+    } catch (err) {
+        res.status(500).json({ status: 'error', message: err.message });
+    }
+});
+
+// Endpoint Tambah User
+app.post('/users/add', async (req, res) => {
+    try {
+        const { username, password, role, cabang, kocab, pelaksana } = req.body;
+        const passwordHash = crypto.createHash('sha256').update(password).digest('hex');
+
+        let pool = await sql.connect(dbConfig);
+        await pool.request()
+            .input('u', sql.VarChar, username)
+            .input('p', sql.VarChar, passwordHash)
+            .input('r', sql.VarChar, role)
+            .input('c', sql.VarChar, cabang)
+            .input('k', sql.VarChar, kocab)
+            // mssql akan menangani nilai null dari JS menjadi NULL di SQL
+            .input('pl', sql.VarChar, pelaksana) 
+            .query('INSERT INTO spkp_users (username, password, role, cabang, kocab, pelaksana) VALUES (@u, @p, @r, @c, @k, @pl)');
+
+        res.json({ status: 'success', message: 'User berhasil ditambahkan' });
+    } catch (err) {
+        res.status(500).json({ status: 'error', message: err.message });
+    }
+});
+
+// Endpoint Edit User
+app.put('/users/update', async (req, res) => {
+    try {
+        const { username, password, role, cabang, kocab, pelaksana } = req.body;
+        let pool = await sql.connect(dbConfig);
+        let request = pool.request();
+
+        // Parameter dasar
+        request.input('u', sql.VarChar, username);
+        request.input('r', sql.VarChar, role);
+        request.input('c', sql.VarChar, cabang);
+        request.input('k', sql.VarChar, kocab);
+        request.input('pl', sql.VarChar, pelaksana);
+
+        let query = "";
+
+        // JIKA password diisi (tidak kosong/null)
+        if (password && password.trim() !== "") {
+            const passwordHash = crypto.createHash('sha256').update(password).digest('hex');
+            request.input('p', sql.VarChar, passwordHash);
+            
+            query = `
+                UPDATE spkp_users 
+                SET password = @p, role = @r, cabang = @c, kocab = @k, pelaksana = @pl 
+                WHERE username = @u
+            `;
+        } else {
+            // JIKA password kosong, jangan sentuh kolom password di DB
+            query = `
+                UPDATE spkp_users 
+                SET role = @r, cabang = @c, kocab = @k, pelaksana = @pl 
+                WHERE username = @u
+            `;
+        }
+
+        await request.query(query);
+        res.json({ status: 'success', message: 'User berhasil diperbarui' });
     } catch (err) {
         res.status(500).json({ status: 'error', message: err.message });
     }
