@@ -14,6 +14,13 @@ const [showPassword, setShowPassword] = useState(false);
 
 const handleLogin = async (e) => {
 e.preventDefault();
+
+// --- VALIDASI AWAL ---
+  if (!username.trim() || !password.trim()) {
+    setErrorMsg("Username dan Password tidak boleh kosong!");
+    return; // Berhenti di sini, jangan lanjut ke fetch
+  }
+  
 setLoading(true);
 setErrorMsg('');
 
