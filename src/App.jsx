@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'; // Tambahkan useEffect
 import logoApp from './assets/tirtanadi-transparant.png';
 import Dashboard from './Dashboard';
+import UserList from './UserList';
 
 function App() {
 const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -11,6 +12,7 @@ const [loading, setLoading] = useState(false);
 const [errorMsg, setErrorMsg] = useState('');
 const [showPassword, setShowPassword] = useState(false);
 const [loadingApp, setLoadingApp] = useState(true); // State untuk loading awal aplikasi
+const [view, setView] = useState('dashboard');
 
 // --- CEK SESI SAAT APLIKASI DIBUKA ---
   useEffect(() => {
@@ -89,7 +91,7 @@ const handleLogout = () => {
     setPassword('');
   };
 
-  // LOGIKA PERGANTIAN HALAMAN
+  
   if (loadingApp) {
     return (
       <div className="min-h-screen bg-blue-500 flex items-center justify-center">
@@ -98,9 +100,18 @@ const handleLogout = () => {
     );
   }
 
-  // LOGIKA PERGANTIAN HALAMAN
+ // B. Jika sudah Login
   if (isLoggedIn && userData) {
-    return <Dashboard userData={userData} onLogout={handleLogout} />;
+    if (view === 'userList') {
+      return <UserList onBack={() => setView('dashboard')} />;
+    }
+    return (
+      <Dashboard 
+        userData={userData} 
+        onLogout={handleLogout} 
+        onOpenUserList={() => setView('userList')} 
+      />
+    );
   }
 
 return (

@@ -1,7 +1,7 @@
 import React from 'react';
 
 // Terima data user dan fungsi logout sebagai "props"
-const Dashboard = ({ userData, onLogout }) => {
+const Dashboard = ({ userData, onLogout, onOpenUserList }) => {
 return (
 <div className="min-h-screen bg-slate-50 pb-10 font-sans">
     {/* Header Profil - Gradient Biru selaras dengan Login */}
@@ -54,15 +54,16 @@ return (
         <h3 className="text-slate-800 font-extrabold text-lg mb-5">Menu Navigasi</h3>
         <div className="grid grid-cols-2 gap-5">
             {[
-            { label: 'Daftar Wajah', icon: '👤', color: 'bg-emerald-50 text-emerald-600' },
-            { label: 'Pengajuan Izin', icon: '📝', color: 'bg-purple-50 text-purple-600' },
+            { label: 'USER', icon: '👤', color: 'bg-emerald-50 text-emerald-600', action: onOpenUserList },
+            { label: 'TESTING', icon: '📝', color: 'bg-purple-50 text-purple-600' },
             { label: 'Download Rekap', icon: '📥', color: 'bg-blue-50 text-blue-600' },
-            { label: 'Riwayat Izin', icon: '🕒', color: 'bg-orange-50 text-orange-600' },
+            { label: 'TESTING', icon: '🕒', color: 'bg-orange-50 text-orange-600' },
             { label: 'Hubungi Pengelola', icon: '📞', color: 'bg-red-50 text-red-600' },
             { label: 'Pengaturan', icon: '⚙️', color: 'bg-slate-100 text-slate-600' }
             ].map((item, idx) => (
             <div key={idx}
-                className="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-100 flex flex-col items-center justify-center text-center space-y-3 active:scale-95 transition-all cursor-pointer hover:shadow-md">
+                className="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-100 flex flex-col items-center justify-center text-center space-y-3 active:scale-95 transition-all cursor-pointer hover:shadow-md"
+                onClick={item.action}>
                 <div className={`w-14 h-14 ${item.color} rounded-2xl flex items-center justify-center text-3xl
                     shadow-sm`}>
                     {item.icon}
@@ -89,7 +90,7 @@ return (
                     </svg>
                 </div>
                 <div>
-                    <p className="text-xs text-slate-400 font-bold uppercase tracking-tighter">Absen Masuk Terakhir</p>
+                    <p className="text-xs text-slate-400 font-bold uppercase tracking-tighter">INFO</p>
                     <h4 className="text-2xl font-black text-slate-800">08:00</h4>
                     <p className="text-xs text-slate-500 font-medium mt-1">Selasa, 5 Mei 2026</p>
                 </div>
