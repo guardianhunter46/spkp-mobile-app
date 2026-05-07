@@ -1,5 +1,4 @@
-import React, { useState } from 'react';
-// 1. Import logo Anda di sini
+import React, { useState, useEffect } from 'react'; // Tambahkan useEffect
 import logoApp from './assets/tirtanadi-transparant.png';
 import Dashboard from './Dashboard';
 
@@ -11,6 +10,17 @@ const [password, setPassword] = useState('');
 const [loading, setLoading] = useState(false);
 const [errorMsg, setErrorMsg] = useState('');
 const [showPassword, setShowPassword] = useState(false);
+const [loadingApp, setLoadingApp] = useState(true); // State untuk loading awal aplikasi
+
+// --- CEK SESI SAAT APLIKASI DIBUKA ---
+  useEffect(() => {
+    const savedUser = localStorage.getItem('user_session');
+    if (savedUser) {
+      setUserData(JSON.parse(savedUser));
+      setIsLoggedIn(true);
+    }
+    setLoadingApp(false); // Selesai mengecek
+  }, []);
 
 const handleLogin = async (e) => {
 e.preventDefault();
@@ -20,54 +30,76 @@ e.preventDefault();
     setErrorMsg("Username dan Password tidak boleh kosong!");
     return; // Berhenti di sini, jangan lanjut ke fetch
   }
-  
+
 setLoading(true);
 setErrorMsg('');
 
 // Masukkan URL Web App GAS yang baru saja Anda deploy
-const scriptURL =
-'https://script.google.com/macros/s/AKfycbxwajPcxZHhZGQFgIM9fZ1J28of7T5zKpsxF4JxTkRWIQuiJyowpQTle4fgUM1ZBrzB/exec';
+// const scriptURL =
+// 'https://script.google.com/macros/s/AKfycbxwajPcxZHhZGQFgIM9fZ1J28of7T5zKpsxF4JxTkRWIQuiJyowpQTle4fgUM1ZBrzB/exec';
+const scriptURL = 'http://localhost:3000/login'; // API NODE.JS (Baru)
+
 
 try {
   const response = await fetch(scriptURL, {
     method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ username, password }),
   });
+
+  // Pastikan respon dari server ok (status 200-299)
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || "Gagal melakukan autentikasi");
+    }
 
   const result = await response.json();
 
   if (result.status === 'success') {
-    // 1. SIMPAN KE STATE (WAJIB agar tampilan berpindah)
+    // 2. Simpan ke localStorage agar sesi tetap aktif setelah refresh/tutup browser
+    // Simpan seluruh objek user termasuk pelaksana, role, dan cabang
+    localStorage.setItem('user_session', JSON.stringify(result.user));
+    // 3. Update State untuk transisi ke Dashboard
     setUserData(result.user); 
     setIsLoggedIn(true); 
 
-    // 2. Notifikasi
-    alert("Login Berhasil! Selamat datang " + result.user.nama);
-
-    // 3. Simpan ke localStorage (Opsional untuk persistent login)
-    localStorage.setItem('user_session', JSON.stringify(result.user));
-
-  } else {
-    // Menampilkan pesan error dari database
-    setErrorMsg(result.message || "User atau Password salah");
-  }
+    // Notifikasi opsional (bisa dihapus jika ingin lebih instan)
+      console.log("Login sukses untuk:", result.user.username);
+    } else {
+      setErrorMsg(result.message || "User atau Password salah");
+    }
 } catch (error) {
-  setErrorMsg("Koneksi gagal. Pastikan IP Public aktif.");
-} finally {
-  setLoading(false);
-}
+    console.error("Login Error:", error);
+    // Cek apakah error karena masalah jaringan (API mati) atau error dari server
+    setErrorMsg(
+      error.message === "Failed to fetch" 
+      ? "Gagal terhubung ke API. Pastikan server Node.js sudah jalan." 
+      : error.message
+    );
+  } finally {
+    setLoading(false);
+  }
 };
 
 const handleLogout = () => {
+    localStorage.removeItem('user_session'); // Hapus data simpanan
     setIsLoggedIn(false);
     setUserData(null);
-    // Bersihkan form agar aman
     setUsername('');
     setPassword('');
   };
 
   // LOGIKA PERGANTIAN HALAMAN
-  if (isLoggedIn) {
+  if (loadingApp) {
+    return (
+      <div className="min-h-screen bg-blue-500 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-white"></div>
+      </div>
+    );
+  }
+
+  // LOGIKA PERGANTIAN HALAMAN
+  if (isLoggedIn && userData) {
     return <Dashboard userData={userData} onLogout={handleLogout} />;
   }
 
