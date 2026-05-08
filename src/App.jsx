@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'; // Tambahkan useEffect
 import logoApp from './assets/tirtanadi-transparant.png';
 import Dashboard from './Dashboard';
 import UserList from './UserList';
+import SPKPList from './SPKPList';
 
 function App() {
 const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -105,12 +106,17 @@ const handleLogout = () => {
     if (view === 'userList') {
       return <UserList onBack={() => setView('dashboard')} />;
     }
+
+    if (view === 'spkpList') {
+    return <SPKPList onBack={() => setView('dashboard')} />;
+  }
     return (
-      <Dashboard 
+    <Dashboard 
         userData={userData} 
         onLogout={handleLogout} 
         onOpenUserList={() => setView('userList')} 
-      />
+        onOpenSPKP={() => setView('spkpList')} // PASTIKAN BARIS INI ADA
+    />
     );
   }
 

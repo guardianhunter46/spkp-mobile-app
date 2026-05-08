@@ -25,6 +25,33 @@ const dbConfig = {
     }
 };
 
+const mysql = require('mysql2/promise');
+require('dotenv').config();
+
+// Konfigurasi MySQL menggunakan data dari .env
+const mysqlConfig = {
+    host: process.env.MY_HOST,
+    user: process.env.MY_USER,
+    password: process.env.MY_PWD,
+    database: process.env.MY_NAME,
+    waitForConnections: true,
+    connectionLimit: 10,
+    queueLimit: 0
+};
+
+// Inisialisasi Pool MySQL
+const mysqlPool = mysql.createPool(mysqlConfig);
+
+// Cek koneksi MySQL saat server jalan
+mysqlPool.getConnection()
+    .then(connection => {
+        console.log('✅ MySQL Connected to: ' + process.env.MY_NAME);
+        connection.release();
+    })
+    .catch(err => {
+        console.error('❌ MySQL Connection Failed:', err.message);
+    });
+
 // Route Login
 app.post('/login', async (req, res) => {
     try {
@@ -146,6 +173,43 @@ app.put('/users/update', async (req, res) => {
         await request.query(query);
         res.json({ status: 'success', message: 'User berhasil diperbarui' });
     } catch (err) {
+        res.status(500).json({ status: 'error', message: err.message });
+    }
+});
+
+// Endpoint Cari SPKP
+app.get('/spkp/search', async (req, res) => {
+    try {
+        const { nomor } = req.query;
+        if (!nomor) return res.status(400).json({ status: 'error', message: 'Nomor wajib diisi' });
+
+        let pool = await sql.connect(dbConfig);
+        let mssqlResult = await pool.request()
+            .input('no', sql.VarChar, nomor)
+            .query('SELECT * FROM spkp_test WHERE no_spkp = @no');
+
+        if (mssqlResult.recordset.length === 0) {
+            return res.status(404).json({ status: 'error', message: 'Data tidak ditemukan' });
+        }
+
+        const dataSpkp = mssqlResult.recordset[0];
+
+        // --- BAGIAN MYSQL ---
+        // Pastikan variabel 'mysqlRows' didefinisikan di sini
+        const [mysqlRows] = await mysqlPool.query(
+            'SELECT tanggal_kontak, tanggal_selesai, status FROM tiket WHERE nomor_tiket = ?', 
+            [nomor]
+        );
+
+        // Kirim ke Frontend
+        res.json({
+            status: 'success',
+            data: dataSpkp,
+            tiket: mysqlRows.length > 0 ? mysqlRows[0] : null // mysqlRows harus ada di dalam blok try ini
+        });
+
+    } catch (err) {
+        console.error(err);
         res.status(500).json({ status: 'error', message: err.message });
     }
 });

@@ -1,7 +1,7 @@
 import React from 'react';
 
 // Terima data user dan fungsi logout sebagai "props"
-const Dashboard = ({ userData, onLogout, onOpenUserList }) => {
+const Dashboard = ({ userData, onLogout, onOpenUserList, onOpenSPKP }) => {
 return (
 <div className="min-h-screen bg-slate-50 pb-10 font-sans">
     {/* Header Profil - Gradient Biru selaras dengan Login */}
@@ -55,7 +55,7 @@ return (
         <div className="grid grid-cols-2 gap-5">
             {[
             { label: 'USER', icon: '👤', color: 'bg-emerald-50 text-emerald-600', action: onOpenUserList },
-            { label: 'TESTING', icon: '📝', color: 'bg-purple-50 text-purple-600' },
+            { label: 'SPKP', icon: '📝', color: 'bg-purple-50 text-purple-600', action: onOpenSPKP },
             { label: 'Download Rekap', icon: '📥', color: 'bg-blue-50 text-blue-600' },
             { label: 'TESTING', icon: '🕒', color: 'bg-orange-50 text-orange-600' },
             { label: 'Hubungi Pengelola', icon: '📞', color: 'bg-red-50 text-red-600' },
