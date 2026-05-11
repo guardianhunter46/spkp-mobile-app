@@ -3,10 +3,38 @@ const sql = require('mssql');
 const cors = require('cors');
 const crypto = require('crypto');
 require('dotenv').config();
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
+
 
 const app = express();
 app.use(cors());
 app.use(express.json());
+app.use('/uploads', express.static('uploads'));
+
+//Konfigurasi Multer dengan Sub-Folder Otomatis
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        let subFolder = '';
+        if (file.fieldname === 'fot_sebelum') subFolder = 'foto_sebelum';
+        else if (file.fieldname === 'fot_proses') subFolder = 'foto_proses';
+        else if (file.fieldname === 'fot_sesudah') subFolder = 'foto_sesudah';
+
+        const fullPath = path.join('uploads', subFolder);
+
+        // Buat folder secara otomatis (recursive: true agar folder uploads juga dibuat jika belum ada)
+        if (!fs.existsSync(fullPath)) {
+            fs.mkdirSync(fullPath, { recursive: true });
+        }
+        cb(null, fullPath);
+    },
+    filename: (req, file, cb) => {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
+    }
+});
+const upload = multer({ storage: storage });
 
 // Konfigurasi Database
 const dbConfig = {
@@ -52,6 +80,50 @@ mysqlPool.getConnection()
     .catch(err => {
         console.error('❌ MySQL Connection Failed:', err.message);
     });
+
+//Endpoint untuk menerima laporan dan foto
+app.post('/api/spkp-report', upload.fields([
+    
+    { name: 'fot_sebelum', maxCount: 1 },
+    { name: 'fot_proses', maxCount: 1 },
+    { name: 'fot_sesudah', maxCount: 1 }
+]), async (req, res) => {
+    console.log("--- ADA REQUEST MASUK ---"); // Tambahkan ini
+    console.log("Body:", req.body);            // Tambahkan ini
+    try {
+        const { no_spkp } = req.body;
+        const files = req.files;
+
+        if (!no_spkp) return res.status(400).json({ status: 'error', message: 'No SPKP tidak ditemukan' });
+
+        // Simpan PATH LENGKAP ke database agar mudah dipanggil
+        const fot_sebelum = files['fot_sebelum'] ? `foto_sebelum/${files['fot_sebelum'][0].filename}` : null;
+        const fot_proses = files['fot_proses'] ? `foto_proses/${files['fot_proses'][0].filename}` : null;
+        const fot_sesudah = files['fot_sesudah'] ? `foto_sesudah/${files['fot_sesudah'][0].filename}` : null;
+
+        // Eksekusi SQL Update
+        let pool = await sql.connect(dbConfig);
+        await pool.request()
+            .input('no', sql.VarChar, no_spkp)
+            .input('f1', sql.VarChar, fot_sebelum)
+            .input('f2', sql.VarChar, fot_proses)
+            .input('f3', sql.VarChar, fot_sesudah)
+            .query(`
+                UPDATE spkp_test 
+                SET fot_sebelum = @f1, 
+                    fot_proses = @f2, 
+                    fot_sesudah = @f3,
+                    isFinish = 1
+                WHERE no_spkp = @no
+            `);
+
+        console.log(`✅ Laporan diterima untuk SPKP: ${no_spkp}`);
+        res.json({ status: 'success', message: 'Laporan dan foto berhasil disimpan' });
+    } catch (err) {
+        console.error("❌ Error Laporan:", err.message);
+        res.status(500).json({ status: 'error', message: err.message });
+    }
+});
 
 // Route Login
 app.post('/login', async (req, res) => {
@@ -293,7 +365,8 @@ app.get('/api/spkp-proses', async (req, res) => {
             .query(`
                 SELECT * FROM spkp_test 
                 WHERE status = 'PROSES' 
-                AND isMobile = 1 
+                AND isMobile = 1
+                AND isFinish is null
                 AND kocab = @kocab 
                 AND perusahaan_rekanan = @pelaksana
                 ORDER BY tgl_spkp DESC

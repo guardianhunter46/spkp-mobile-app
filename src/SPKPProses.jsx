@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import imageCompression from 'browser-image-compression';
 
 const PhotoUpload = ({ label, id, onFileSelect }) => {
   const [preview, setPreview] = useState(null);
@@ -80,6 +81,10 @@ const SPKPProses = ({ user, onBack }) => {
     const [selectedTask, setSelectedTask] = useState(null);
     const [showReportingModal, setShowReportingModal] = useState(false);
 
+    const [isSyncing, setIsSyncing] = useState(false); // Untuk animasi loading di tombol
+    const [isSuccess, setIsSuccess] = useState(false); // Untuk notifikasi sukses
+    const [showSuccessAlert, setShowSuccessAlert] = useState(false);
+
     // State untuk menyimpan file foto
     const [files, setFiles] = useState({
         fot_sebelum: null,
@@ -112,10 +117,66 @@ const SPKPProses = ({ user, onBack }) => {
         setFiles(prev => ({ ...prev, [id]: file }));
     };
 
-    const handleSendReport = () => {
-        console.log("File yang akan dikirim:", files);
-        alert("Mengirim Laporan...");
-        // Di sini nanti kita buat logic FormData
+    const handleSendReport = async () => {
+
+        if (!files.fot_sebelum || !files.fot_proses || !files.fot_sesudah) {
+            alert("📸 Harap lengkapi ketiga foto (Sebelum, Proses, Sesudah)!");
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('no_spkp', selectedTask.no_spkp);
+        formData.append('fot_sebelum', files.fot_sebelum);
+        formData.append('fot_proses', files.fot_proses);
+        formData.append('fot_sesudah', files.fot_sesudah);
+
+        setIsSyncing(true);
+
+        // 2. Opsi Kompresi
+        const options = {
+            maxSizeMB: 0.1,            // Ukuran maksimal file hasil kompresi (1MB)
+            maxWidthOrHeight: 800,  // Resolusi maksimal (HD)
+            useWebWorker: true,
+            fileType: 'image/jpeg', // Pastikan format JPEG untuk efisiensi
+        };
+
+        try {
+            const formData = new FormData();
+            formData.append('no_spkp', selectedTask.no_spkp);
+
+            // 3. Proses Kompresi Beruntun
+            console.log("Sedang mengompresi foto...");
+            
+            const compressedSebelum = await imageCompression(files.fot_sebelum, options);
+            const compressedProses = await imageCompression(files.fot_proses, options);
+            const compressedSesudah = await imageCompression(files.fot_sesudah, options);
+
+            // PENTING: Tambahkan nama file manual di parameter ketiga append agar format terbaca server
+            formData.append('fot_sebelum', compressedSebelum, `sebelum-${Date.now()}.jpg`);
+            formData.append('fot_proses', compressedProses, `proses-${Date.now()}.jpg`);
+            formData.append('fot_sesudah', compressedSesudah, `sesudah-${Date.now()}.jpg`);
+
+            // 5. Kirim ke Server
+            const response = await fetch(`http://localhost:3000/api/spkp-report`, {
+                method: 'POST',
+                body: formData,
+            });
+
+            const result = await response.json();
+
+            if (result.status === 'success') {
+                setShowReportingModal(false); // Tutup modal input dulu
+                setFiles({ fot_sebelum: null, fot_proses: null, fot_sesudah: null });
+                setShowSuccessAlert(true); // Munculkan Alert Berhasil
+                fetchData(); // Refresh list di belakang
+                setTimeout(() => setShowSuccessAlert(false), 3000); // Otomatis hilang setelah 3 detik
+            }
+        } catch (err) {
+            console.error("Compression/Upload Error:", err);
+            alert("❌ Gagal memproses foto. Pastikan formatnya benar.");
+        } finally {
+            setIsSyncing(false);
+        }
     };
 
     return (
@@ -263,24 +324,70 @@ const SPKPProses = ({ user, onBack }) => {
                         </div>
                     </div>
 
-                    {/* 3. Footer Modal (DIAM/STICKY DI BAWAH) */}
-                    <div className="p-6 sm:p-8 bg-white border-t border-slate-50">
+                    {/* Footer Modal */}
+                    <div className="p-6 sm:p-8 bg-white border-t border-slate-50 relative">
+                        
                         <button 
-                            className="w-full bg-emerald-600 text-white py-5 rounded-[2rem] font-black text-sm uppercase tracking-widest shadow-xl shadow-emerald-100 active:scale-95 transition-all flex items-center justify-center space-x-2"
-                            onClick={() => alert('Mengirim Laporan Data...')}
+                            disabled={isSyncing}
+                            onClick={handleSendReport}
+                            className={`w-full py-5 rounded-[2rem] font-black text-sm uppercase tracking-widest transition-all flex items-center justify-center space-x-3 ${
+                                isSyncing 
+                                ? 'bg-slate-100 text-slate-400 cursor-not-allowed' 
+                                : 'bg-emerald-600 text-white shadow-xl shadow-emerald-100 active:scale-95'
+                            }`}
                         >
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />
-                            </svg>
-                            <span>Kirim Laporan SPKP</span>
+                            {isSyncing ? (
+                                <>
+                                    <svg className="animate-spin h-5 w-5 text-slate-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    </svg>
+                                    <span>Mengirim...</span>
+                                </>
+                            ) : (
+                                <>
+                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />
+                                    </svg>
+                                    <span>Kirim Laporan Data</span>
+                                </>
+                            )}
                         </button>
-                        <p className="text-[8px] text-center text-slate-400 font-bold uppercase mt-3 tracking-tighter">
-                            Pastikan koordinat GPS & foto sudah jelas
-                        </p>
+                        
+                        {!isSyncing && (
+                            <p className="text-[8px] text-center text-slate-400 font-bold uppercase mt-3 tracking-tighter">
+                                Pastikan foto sudah sesuai sebelum mengirim
+                            </p>
+                        )}
                     </div>
                 </div>
             </div>
         )}
+        {/* OVERLAY NOTIFIKASI SUKSES */}
+        {showSuccessAlert && (
+            <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[150] flex items-center justify-center p-6">
+                <div className="bg-white rounded-[3rem] p-10 shadow-2xl w-full max-w-sm text-center relative animate-in fade-in zoom-in duration-300">
+                    {/* Icon Centang Animasi */}
+                    <div className="w-24 h-24 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-8 animate-bounce">
+                        <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="4" d="M5 13l4 4L19 7" />
+                        </svg>
+                    </div>
+                    
+                    <h3 className="text-3xl font-black text-slate-800 mb-3">Berhasil!</h3>
+                    <p className="text-slate-500 font-medium mb-10">
+                        Laporan progres kerja telah berhasil dikirim ke sistem.
+                    </p>
+                    
+                    <button 
+                        onClick={() => setShowSuccessAlert(false)}
+                        className="w-full bg-slate-900 text-white py-5 rounded-[2rem] font-black text-sm uppercase tracking-widest shadow-xl shadow-slate-200 active:scale-95 transition-all"
+                    >
+                        Mantap!
+                    </button>
+                </div>
+            </div>
+            )}
         </div>
     );
 };
