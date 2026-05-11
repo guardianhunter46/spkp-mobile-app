@@ -270,6 +270,46 @@ app.post('/spkp/sync', async (req, res) => {
     }
 });
 
+app.get('/api/spkp-proses', async (req, res) => {
+    try {
+        const { kocab, pelaksana, role } = req.query;
+
+        // TAMBAHKAN LOG INI
+    console.log("--- DEBUG SPKP PROSES ---");
+    console.log("KOCAB diterima:", kocab);
+    console.log("PELAKSANA diterima:", pelaksana);
+    console.log("ROLE yang diminta: REKANAN");
+
+        // Validasi input
+        if (!kocab || !pelaksana) {
+            return res.status(400).json({ status: 'error', message: 'Parameter kocab dan pelaksana diperlukan' });
+        }
+
+        let pool = await sql.connect(dbConfig);
+        let result = await pool.request()
+            .input('kocab', sql.VarChar, kocab)
+            .input('pelaksana', sql.VarChar, pelaksana)
+            .input('role', sql.VarChar, 'REKANAN') // Tambahkan input role
+            .query(`
+                SELECT * FROM spkp_test 
+                WHERE status = 'PROSES' 
+                AND isMobile = 1 
+                AND kocab = @kocab 
+                AND perusahaan_rekanan = @pelaksana
+                ORDER BY tgl_spkp DESC
+            `);
+
+        res.json({ 
+            status: 'success', 
+            count: result.recordset.length,
+            data: result.recordset 
+        });
+    } catch (err) {
+        console.error("Database Error:", err.message);
+        res.status(500).json({ status: 'error', message: err.message });
+    }
+});
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log(`API berjalan di http://localhost:${PORT}`);

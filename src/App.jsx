@@ -3,6 +3,7 @@ import logoApp from './assets/tirtanadi-transparant.png';
 import Dashboard from './Dashboard';
 import UserList from './UserList';
 import SPKPList from './SPKPList';
+import SPKPProses from './SPKPProses';
 
 function App() {
 const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -110,12 +111,17 @@ const handleLogout = () => {
     if (view === 'spkpList') {
     return <SPKPList onBack={() => setView('dashboard')} />;
   }
+    if (view === 'spkpProses') {
+        return <SPKPProses user={userData} onBack={() => setView('dashboard')} />;
+    }
+
     return (
     <Dashboard 
         userData={userData} 
         onLogout={handleLogout} 
         onOpenUserList={() => setView('userList')} 
         onOpenSPKP={() => setView('spkpList')} // PASTIKAN BARIS INI ADA
+        onOpenSPKPProses={() => setView('spkpProses')}
     />
     );
   }
