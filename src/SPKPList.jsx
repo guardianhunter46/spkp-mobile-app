@@ -8,6 +8,7 @@ const [error, setError] = useState('');
 const [showDetailModal, setShowDetailModal] = useState(false);
 const [tiketData, setTiketData] = useState(null);
 const [syncing, setSyncing] = useState(false);
+const [showSuccessAlert, setShowSuccessAlert] = useState(false);
 
 const handleSearch = async (e) => {
     e.preventDefault();
@@ -76,17 +77,30 @@ const handleSync = async () => {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ nomor: data.no_spkp })
         });
+        
         const result = await response.json();
 
         if (result.status === 'success') {
-            alert('Sinkronisasi Berhasil!');
-            // Update data di UI secara lokal agar langsung berubah tanpa reload
-            setData({ ...data, selesai: result.syncedData.selesai, status: 'SELESAI' });
+            // 1. Update data internal agar UI langsung berubah (Status jadi SELESAI)
+            setData({ 
+                ...data, 
+                selesai: result.syncedData.selesai, 
+                status: 'SELESAI' 
+            });
+
+            // 2. Refresh list utama di background
+            if (typeof fetchData === 'function') fetchData();
+
+            // 3. Tampilkan Card Alert Sukses
+            setShowSuccessAlert(true);
+            
         } else {
-            alert('Gagal: ' + result.message);
+            // Jika gagal, kita tetap pakai alert sederhana atau bisa buat Card Alert khusus Error nanti
+            alert('⚠️ Gagal: ' + result.message);
         }
     } catch (err) {
-        alert('Terjadi kesalahan jaringan');
+        console.error(err);
+        alert('❌ Terjadi kesalahan jaringan. Pastikan server aktif.');
     } finally {
         setSyncing(false);
     }
@@ -312,23 +326,23 @@ return (
       <p className="text-blue-400 text-xs font-medium italic">Data tiket tidak ditemukan</p>
     </div>
   )}
-  {/* Masukkan kode ini tepat di bawah kotak biru Data Tiket */}
-{tiketData && tiketData.status === '2' && data.status !== 'SELESAI' && (
-  <button
-    onClick={handleSync}
-    disabled={syncing}
-    className={`mt-4 w-full flex items-center justify-center space-x-2 p-4 rounded-2xl font-bold transition-all ${
-      syncing 
-      ? 'bg-slate-100 text-slate-400 cursor-not-allowed' 
-      : 'bg-emerald-600 text-white shadow-lg shadow-emerald-200 active:scale-95'
-    }`}
-  >
-    <svg className={`w-5 h-5 ${syncing ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-    </svg>
-    <span>{syncing ? 'Menyingkronkan...' : 'Singkronkan'}</span>
-  </button>
-)}
+      {/* Masukkan kode ini tepat di bawah kotak biru Data Tiket */}
+      {tiketData && tiketData.status === '2' && data.status !== 'SELESAI' && (
+        <button
+          onClick={handleSync}
+          disabled={syncing}
+          className={`mt-4 w-full flex items-center justify-center space-x-2 p-4 rounded-2xl font-bold transition-all ${
+            syncing 
+            ? 'bg-slate-100 text-slate-400 cursor-not-allowed' 
+            : 'bg-emerald-600 text-white shadow-lg shadow-emerald-200 active:scale-95'
+          }`}
+        >
+          <svg className={`w-5 h-5 ${syncing ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+          </svg>
+          <span>{syncing ? 'Menyingkronkan...' : 'Singkronkan'}</span>
+        </button>
+      )}
 </div>
     </div>
 
@@ -344,6 +358,32 @@ return (
     </div>
   </div>
 )}
+      {/* OVERLAY NOTIFIKASI SUKSES SINKRONISASI */}
+      {showSuccessAlert && (
+          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[200] flex items-center justify-center p-6">
+              <div className="bg-white rounded-[3rem] p-10 shadow-2xl w-full max-w-sm text-center relative animate-in fade-in zoom-in duration-300">
+                  
+                  {/* Icon Centang Animasi - Emerald Green */}
+                  <div className="w-24 h-24 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-8 animate-bounce">
+                      <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="4" d="M5 13l4 4L19 7" />
+                      </svg>
+                  </div>
+                  
+                  <h3 className="text-3xl font-black text-slate-800 mb-3">Berhasil!</h3>
+                  <p className="text-slate-500 font-medium mb-10">
+                      Data SPKP telah berhasil disinkronkan dengan server pusat.
+                  </p>
+                  
+                  <button 
+                      onClick={() => setShowSuccessAlert(false)}
+                      className="w-full bg-slate-900 text-white py-5 rounded-[2rem] font-black text-sm uppercase tracking-widest shadow-xl shadow-slate-200 active:scale-95 transition-all"
+                  >
+                      Siap, Lanjutkan!
+                  </button>
+              </div>
+          </div>
+      )}
 </div>
 );
 };
