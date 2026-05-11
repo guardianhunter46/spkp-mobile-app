@@ -16,7 +16,8 @@ const dbConfig = {
     database: process.env.DB_NAME,
     options: {
         encrypt: false, // Set true jika pakai Azure
-        trustServerCertificate: true
+        trustServerCertificate: true,
+        useUTC: false
     },
     pool: {
         max: 10,
@@ -210,6 +211,61 @@ app.get('/spkp/search', async (req, res) => {
 
     } catch (err) {
         console.error(err);
+        res.status(500).json({ status: 'error', message: err.message });
+    }
+});
+
+app.post('/spkp/sync', async (req, res) => {
+    try {
+        const { nomor } = req.body;
+        if (!nomor) return res.status(400).json({ status: 'error', message: 'Nomor SPKP diperlukan' });
+
+        // 1. Ambil data terbaru dari MySQL
+        const [mysqlRows] = await mysqlPool.query(
+            'SELECT tanggal_selesai, status FROM tiket WHERE nomor_tiket = ?', 
+            [nomor]
+        );
+
+        if (mysqlRows.length === 0) {
+            return res.status(404).json({ status: 'error', message: 'Data tiket tidak ditemukan di MySQL' });
+        }
+
+        const tiket = mysqlRows[0];
+
+        if (tiket.status === '2' && tiket.tanggal_selesai) {
+            // AMBIL TANGGAL ASLI TANPA KONVERSI UTC
+            const d = new Date(tiket.tanggal_selesai);
+            
+            // Format manual ke YYYY-MM-DD HH:mm:ss
+            const pad = (n) => n.toString().padStart(2, '0');
+            const formattedDate = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+
+            console.log("Tanggal Asli MySQL:", tiket.tanggal_selesai);
+            console.log("Tanggal Kirim ke MS SQL:", formattedDate); // Pastikan di log ini jamnya sudah benar
+
+            let pool = await sql.connect(dbConfig);
+            
+            await pool.request()
+                .input('no', sql.VarChar, nomor)
+                .input('tgl', sql.VarChar, formattedDate) // Kirim string murni
+                .query(`
+                    UPDATE spkp_test 
+                    SET selesai = CAST(@tgl AS DATETIME), status = 'SELESAI' 
+                    WHERE no_spkp = @no
+                `);
+
+            res.json({ 
+                status: 'success', 
+                message: 'Data berhasil disinkronkan',
+                syncedData: { selesai: formattedDate, status: 'SELESAI' }
+            });
+        } else {
+            res.status(400).json({ 
+                status: 'error', 
+                message: 'Kondisi sinkron tidak terpenuhi (Tiket belum Selesai/Status bukan 2)' 
+            });
+        }
+    } catch (err) {
         res.status(500).json({ status: 'error', message: err.message });
     }
 });
