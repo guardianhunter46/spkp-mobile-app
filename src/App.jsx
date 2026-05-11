@@ -4,6 +4,7 @@ import Dashboard from './Dashboard';
 import UserList from './UserList';
 import SPKPList from './SPKPList';
 import SPKPProses from './SPKPProses';
+import SPKPSelesai from './SPKPSelesai';
 
 function App() {
 const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -115,6 +116,10 @@ const handleLogout = () => {
         return <SPKPProses user={userData} onBack={() => setView('dashboard')} />;
     }
 
+    if (view === 'spkpSelesai') {
+        return <SPKPSelesai user={userData} onBack={() => setView('dashboard')} />;
+    }
+
     return (
     <Dashboard 
         userData={userData} 
@@ -122,6 +127,7 @@ const handleLogout = () => {
         onOpenUserList={() => setView('userList')} 
         onOpenSPKP={() => setView('spkpList')} // PASTIKAN BARIS INI ADA
         onOpenSPKPProses={() => setView('spkpProses')}
+        onOpenSPKPSelesai={() => setView('spkpSelesai')}
     />
     );
   }

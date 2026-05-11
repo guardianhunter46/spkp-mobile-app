@@ -383,6 +383,29 @@ app.get('/api/spkp-proses', async (req, res) => {
     }
 });
 
+app.get('/api/spkp-selesai', async (req, res) => {
+    try {
+        const { kocab, pelaksana } = req.query;
+        let pool = await sql.connect(dbConfig);
+        let result = await pool.request()
+            .input('kocab', sql.VarChar, kocab)
+            .input('pelaksana', sql.VarChar, pelaksana)
+            .query(`
+                SELECT * FROM spkp_test 
+                WHERE status = 'PROSES' 
+                AND isMobile = 1
+                AND isFinish = 1
+                AND kocab = @kocab 
+                AND perusahaan_rekanan = @pelaksana
+                ORDER BY tgl_spkp DESC
+            `);
+
+        res.json({ status: 'success', data: result.recordset });
+    } catch (err) {
+        res.status(500).json({ status: 'error', message: err.message });
+    }
+});
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log(`API berjalan di http://localhost:${PORT}`);
