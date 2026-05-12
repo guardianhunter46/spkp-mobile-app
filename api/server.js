@@ -385,23 +385,43 @@ app.get('/api/spkp-proses', async (req, res) => {
 
 app.get('/api/spkp-selesai', async (req, res) => {
     try {
-        const { kocab, pelaksana } = req.query;
+        const { kocab, pelaksana, search, startDate, endDate } = req.query;
         let pool = await sql.connect(dbConfig);
-        let result = await pool.request()
-            .input('kocab', sql.VarChar, kocab)
-            .input('pelaksana', sql.VarChar, pelaksana)
-            .query(`
-                SELECT * FROM spkp_test 
-                WHERE status = 'PROSES' 
-                AND isMobile = 1
-                AND isFinish = 1
-                AND kocab = @kocab 
-                AND perusahaan_rekanan = @pelaksana
-                ORDER BY tgl_spkp DESC
-            `);
-        // TAMBAHKAN INI UNTUK DEBUG
-        console.log("Contoh Data Pertama:", result.recordset[0]);
+        
+        // Base Query
+        let query = `
+            SELECT * FROM spkp_test 
+            WHERE status = 'PROSES' 
+            AND isMobile = 1 AND isFinish = 1
+            AND kocab = @kocab 
+            AND perusahaan_rekanan = @pelaksana
+        `;
 
+        const request = pool.request()
+            .input('kocab', sql.VarChar, kocab)
+            .input('pelaksana', sql.VarChar, pelaksana);
+
+        // --- LOGIKA FILTER BERLAPIS ---
+        
+        if (search) {
+            // KONDISI 1: Jika user ketik No SPKP, cari di SEMUA data
+            query += ` AND no_spkp LIKE @search`;
+            request.input('search', sql.VarChar, `%${search}%`);
+        } 
+        else if (startDate && endDate) {
+            // KONDISI 2: Jika user pilih tanggal, cari di SEMUA data sesuai rentang tsb
+            query += ` AND tgl_spkp BETWEEN @start AND @end`;
+            request.input('start', sql.SmallDateTime, startDate);
+            request.input('end', sql.SmallDateTime, endDate);
+        } 
+        else {
+            // KONDISI 3 (DEFAULT): Jika tidak cari apa-apa, baru batasi 7 hari terakhir
+            query += ` AND tgl_spkp >= DATEADD(day, -7, GETDATE())`;
+        }
+
+        query += ` ORDER BY tgl_spkp DESC`;
+        
+        let result = await request.query(query);
         res.json({ status: 'success', data: result.recordset });
     } catch (err) {
         res.status(500).json({ status: 'error', message: err.message });

@@ -32,23 +32,48 @@ const SPKPSelesai = ({ user, onBack }) => {
     const [selectedTask, setSelectedTask] = useState(null);
     const [showDetailModal, setShowDetailModal] = useState(false);
     const [previewImage, setPreviewImage] = useState(null); // Menyimpan URL foto untuk di-zoom
+    
+    const [filter, setFilter] = useState({
+    search: '',
+    startDate: '',
+    endDate: ''
+    });
+    const [showFilter, setShowFilter] = useState(false); // Untuk buka-tutup panel filter
 
     useEffect(() => {
         fetchData();
     }, []);
 
     const fetchData = async () => {
+        setLoading(true);
         try {
-            const response = await fetch(`http://localhost:3000/api/spkp-selesai?kocab=${user.kocab}&pelaksana=${user.pelaksana}`);
+            const { search, startDate, endDate } = filter;
+            let url = `http://localhost:3000/api/spkp-selesai?kocab=${user.kocab}&pelaksana=${user.pelaksana}`;
+            
+            if (search) url += `&search=${search}`;
+            if (startDate && endDate) url += `&startDate=${startDate}&endDate=${endDate}`;
+
+            const response = await fetch(url);
             const result = await response.json();
-            if (result.status === 'success') {
-                setListSelesai(result.data);
-            }
+            if (result.status === 'success') setListSelesai(result.data);
         } catch (err) {
-            console.error("Gagal mengambil data selesai");
+            console.error("Error filter:", err);
         } finally {
             setLoading(false);
         }
+    };
+
+    const handleResetFilter = () => {
+        setFilter({
+            search: '',
+            startDate: '',
+            endDate: ''
+        });
+        setShowFilter(false);
+        
+        // Panggil ulang fetchData. Karena filter sudah kosong, 
+        // Backend akan otomatis masuk ke "KONDISI 3" (tampil 7 hari lagi).
+        fetchData(); 
     };
 
     return (
@@ -66,6 +91,79 @@ const SPKPSelesai = ({ user, onBack }) => {
                         <span className="w-2 h-2 bg-white rounded-full animate-pulse"></span>
                         <p className="text-white/80 text-[9px] font-black uppercase tracking-[0.2em]">Tugas Telah Tuntas</p>
                     </div>
+                </div>
+            </div>
+
+            {/* SEARCH & FILTER SECTION */}
+            <div className="px-6 -mt-6">
+                <div className="bg-white rounded-[2rem] shadow-xl p-4 border border-slate-100">
+                    <div className="flex items-center space-x-3">
+                        {/* Input Search */}
+                        <div className="relative flex-1">
+                            <span className="absolute left-4 top-3.5 text-slate-400">🔍</span>
+                            <input 
+                                type="text"
+                                placeholder="Cari No. SPKP..."
+                                className="w-full bg-slate-50 border-none rounded-2xl py-3.5 pl-10 pr-4 text-xs font-bold text-slate-700 focus:ring-2 focus:ring-orange-500 transition-all"
+                                value={filter.search}
+                                onChange={(e) => setFilter({...filter, search: e.target.value})}
+                            />
+                        </div>
+                        
+                        {/* Toggle Button Filter Tanggal */}
+                        <button 
+                            onClick={() => setShowFilter(!showFilter)}
+                            className={`p-3.5 rounded-2xl transition-all ${showFilter ? 'bg-orange-500 text-white' : 'bg-orange-50 text-orange-600'}`}
+                        >
+                            📅
+                        </button>
+
+                        {/* Submit Button */}
+                        <button 
+                            onClick={fetchData}
+                            className="bg-slate-900 text-white px-6 py-3.5 rounded-2xl text-[10px] font-black uppercase tracking-widest active:scale-95 transition-all"
+                        >
+                            Cari
+                        </button>
+                    </div>
+
+                    {/* Expandable Date Filter */}
+                    {showFilter && (
+                        <div className="mt-4 pt-4 border-t border-dashed border-slate-200 animate-in slide-in-from-top-2 duration-300">
+                            <p className="text-[9px] font-black text-slate-400 uppercase mb-3 ml-1 tracking-widest">Rentang Tanggal SPKP</p>
+                            <div className="grid grid-cols-2 gap-3">
+                                <div className="space-y-1">
+                                    <label className="text-[8px] font-bold text-slate-400 ml-2 uppercase">Dari</label>
+                                    <input 
+                                        type="date" 
+                                        className="w-full bg-slate-50 border-none rounded-xl p-3 text-xs font-bold text-slate-600"
+                                        value={filter.startDate}
+                                        onChange={(e) => setFilter({...filter, startDate: e.target.value})}
+                                    />
+                                </div>
+                                <div className="space-y-1">
+                                    <label className="text-[8px] font-bold text-slate-400 ml-2 uppercase">Sampai</label>
+                                    <input 
+                                        type="date" 
+                                        className="w-full bg-slate-50 border-none rounded-xl p-3 text-xs font-bold text-slate-600"
+                                        value={filter.endDate}
+                                        onChange={(e) => setFilter({...filter, endDate: e.target.value})}
+                                    />
+                                </div>
+                            </div>
+                            
+                            {/* Reset Button */}
+                            <button 
+                                onClick={() => {
+                                    setFilter({search: '', startDate: '', endDate: ''});
+                                    setShowFilter(false);
+                                }}
+                                className="w-full mt-4 text-[9px] font-black text-rose-500 uppercase tracking-widest py-2 italic"
+                            >
+                                × Bersihkan Filter
+                            </button>
+                        </div>
+                    )}
                 </div>
             </div>
 
@@ -152,6 +250,17 @@ const SPKPSelesai = ({ user, onBack }) => {
                     ))
                 )}
             </div>
+            {/* Info Badge */}
+            {!filter.startDate && (
+                <div className="px-8 mt-4">
+                    <div className="bg-orange-50 border border-orange-100 rounded-2xl p-3 flex items-center space-x-3">
+                        <span className="text-lg">ℹ️</span>
+                        <p className="text-[9px] font-bold text-orange-700 uppercase leading-tight tracking-wide">
+                            Menampilkan data 7 hari terakhir. Gunakan filter tanggal untuk melihat data yang lebih lama.
+                        </p>
+                    </div>
+                </div>
+            )}
 
             {/* Modal Detail (View Only + Foto) */}
             {showDetailModal && selectedTask && (
