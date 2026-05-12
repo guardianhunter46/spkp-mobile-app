@@ -385,37 +385,38 @@ app.get('/api/spkp-proses', async (req, res) => {
 
 app.get('/api/spkp-selesai', async (req, res) => {
     try {
-        const { kocab, pelaksana, search, startDate, endDate } = req.query;
+        const { kocab, pelaksana, role, search, startDate, endDate } = req.query;
         let pool = await sql.connect(dbConfig);
         
-        // Base Query
+        // 1. Base Query
         let query = `
             SELECT * FROM spkp_test 
             WHERE status = 'PROSES' 
             AND isMobile = 1 AND isFinish = 1
             AND kocab = @kocab 
-            AND perusahaan_rekanan = @pelaksana
         `;
 
-        const request = pool.request()
-            .input('kocab', sql.VarChar, kocab)
-            .input('pelaksana', sql.VarChar, pelaksana);
+        const request = pool.request().input('kocab', sql.VarChar, kocab);
 
-        // --- LOGIKA FILTER BERLAPIS ---
-        
+        // 2. LOGIKA ROLE: Jika BUKAN Kabag/Admin, filter berdasarkan pelaksana
+        if (role !== 'KABAG_JARINGAN' && role !== 'ADMIN') {
+            query += ` AND perusahaan_rekanan = @pelaksana`;
+            request.input('pelaksana', sql.VarChar, pelaksana);
+        }
+
+        // 3. Tambahkan Filter Search No SPKP
         if (search) {
-            // KONDISI 1: Jika user ketik No SPKP, cari di SEMUA data
             query += ` AND no_spkp LIKE @search`;
             request.input('search', sql.VarChar, `%${search}%`);
         } 
+        // 4. Tambahkan Filter Tanggal
         else if (startDate && endDate) {
-            // KONDISI 2: Jika user pilih tanggal, cari di SEMUA data sesuai rentang tsb
             query += ` AND tgl_spkp BETWEEN @start AND @end`;
             request.input('start', sql.SmallDateTime, startDate);
             request.input('end', sql.SmallDateTime, endDate);
         } 
+        // 5. Default 7 Hari
         else {
-            // KONDISI 3 (DEFAULT): Jika tidak cari apa-apa, baru batasi 7 hari terakhir
             query += ` AND tgl_spkp >= DATEADD(day, -7, GETDATE())`;
         }
 
@@ -438,6 +439,33 @@ app.get('/api/rekanan/:kocab', async (req, res) => {
         
         res.json({ status: 'success', data: result.recordset });
     } catch (err) {
+        res.status(500).json({ status: 'error', message: err.message });
+    }
+});
+
+app.post('/api/spkp/verify', async (req, res) => {
+    try {
+        const { no_spkp } = req.body; // Cukup ambil no_spkp saja
+        
+        console.log("Mencoba verifikasi No. SPKP:", no_spkp);
+
+        let pool = await sql.connect(dbConfig);
+        
+        // Query disederhanakan: Hanya set IsVerif ke 1
+        const query = `
+            UPDATE spkp_test 
+            SET IsVerif = 1
+            WHERE no_spkp = @no_spkp
+        `;
+
+        await pool.request()
+            .input('no_spkp', sql.VarChar, no_spkp)
+            .query(query);
+        
+        console.log("Verifikasi Berhasil!");
+        res.json({ status: 'success', message: 'Data berhasil diverifikasi' });
+    } catch (err) {
+        console.error("ERROR SQL VERIFIKASI:", err.message);
         res.status(500).json({ status: 'error', message: err.message });
     }
 });

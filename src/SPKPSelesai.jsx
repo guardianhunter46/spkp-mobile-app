@@ -27,6 +27,7 @@ const PhotoPreviewCard = ({ label, imageUrl, onZoom }) => {
 };
 
 const SPKPSelesai = ({ user, onBack }) => {
+    console.log("Data User Login:", user); // LIHAT DI KONSOL BROWSER (F12)
     const [listSelesai, setListSelesai] = useState([]);
     const [loading, setLoading] = useState(true);
     const [selectedTask, setSelectedTask] = useState(null);
@@ -45,23 +46,24 @@ const SPKPSelesai = ({ user, onBack }) => {
     }, []);
 
     const fetchData = async () => {
-        setLoading(true);
-        try {
-            const { search, startDate, endDate } = filter;
-            let url = `http://localhost:3000/api/spkp-selesai?kocab=${user.kocab}&pelaksana=${user.pelaksana}`;
-            
-            if (search) url += `&search=${search}`;
-            if (startDate && endDate) url += `&startDate=${startDate}&endDate=${endDate}`;
+    setLoading(true);
+    try {
+        const { search, startDate, endDate } = filter;
+        // Tambahkan &role=${user.role} di URL
+        let url = `http://localhost:3000/api/spkp-selesai?kocab=${user.kocab}&pelaksana=${user.pelaksana}&role=${user.role}`;
+        
+        if (search) url += `&search=${search}`;
+        if (startDate && endDate) url += `&startDate=${startDate}&endDate=${endDate}`;
 
-            const response = await fetch(url);
-            const result = await response.json();
-            if (result.status === 'success') setListSelesai(result.data);
-        } catch (err) {
-            console.error("Error filter:", err);
-        } finally {
-            setLoading(false);
-        }
-    };
+        const response = await fetch(url);
+        const result = await response.json();
+        if (result.status === 'success') setListSelesai(result.data);
+    } catch (err) {
+        console.error(err);
+    } finally {
+        setLoading(false);
+    }
+};
 
     const handleResetFilter = () => {
         setFilter({
@@ -76,6 +78,31 @@ const SPKPSelesai = ({ user, onBack }) => {
         fetchData(); 
     };
 
+    const handleVerifikasi = async (no_spkp) => {
+        try {
+            const response = await fetch('http://localhost:3000/api/spkp/verify', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ no_spkp: no_spkp }) // Hanya kirim no_spkp
+            });
+            
+            const result = await response.json();
+            if (result.status === 'success') {
+                setShowDetailModal(false); 
+                // Pastikan fetchData() dipanggil agar daftar terupdate otomatis
+                fetchData(); 
+                
+                // Opsional: Jika kamu belum buat SuccessAlert, ganti dulu dengan alert biasa
+                alert("SPKP Berhasil Diverifikasi!"); 
+            } else {
+                alert("Gagal: " + result.message);
+            }
+        } catch (err) {
+            console.error("Fetch Error:", err);
+            alert("Terjadi kesalahan koneksi ke server");
+        }
+    };
+
     return (
         <div className="min-h-screen bg-slate-50 pb-10">
             {/* Header Gradasi - Tema Orange */}
@@ -86,10 +113,15 @@ const SPKPSelesai = ({ user, onBack }) => {
                     </svg>
                 </button>
                 <div>
-                    <h2 className="text-white text-xl font-black tracking-tight">SPKP Selesai</h2>
+                    {/* LOGIKA ROLE DI SINI */}
+                    <h2 className="text-white text-xl font-black tracking-tight">
+                        {user?.role === 'KABAG_JARINGAN' ? 'Verifikasi Pekerjaan' : 'SPKP Selesai'}
+                    </h2>
                     <div className="flex items-center space-x-2 mt-1">
                         <span className="w-2 h-2 bg-white rounded-full animate-pulse"></span>
-                        <p className="text-white/80 text-[9px] font-black uppercase tracking-[0.2em]">Tugas Telah Tuntas</p>
+                        <p className="text-white/80 text-[9px] font-black uppercase tracking-[0.2em]">
+                            {user?.role === 'KABAG_JARINGAN' ? 'Mode Supervisor' : 'Tugas Telah Tuntas'}
+                        </p>
                     </div>
                 </div>
             </div>
@@ -126,6 +158,33 @@ const SPKPSelesai = ({ user, onBack }) => {
                             Cari
                         </button>
                     </div>
+
+                    {/* --- TAMBAHKAN DI SINI (HANYA UNTUK KABAG) --- */}
+                    {user?.role === 'KABAG_JARINGAN' && (
+                        <div className="mt-4 pt-4 border-t border-slate-50 flex items-center space-x-2 overflow-x-auto scrollbar-hide">
+                            <button 
+                                onClick={() => {
+                                    // Logika filter: ambil data yang IsVerif-nya kosong saja
+                                    const belumVerif = listSelesai.filter(item => !item.IsVerif);
+                                    setListSelesai(belumVerif);
+                                }}
+                                className="whitespace-nowrap px-4 py-2 rounded-xl bg-orange-50 text-orange-600 text-[10px] font-black uppercase tracking-wider border border-orange-100 active:scale-95 transition-all flex items-center space-x-2"
+                            >
+                                <span className="relative flex h-2 w-2">
+                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span>
+                                    <span className="relative inline-flex rounded-full h-2 w-2 bg-orange-500"></span>
+                                </span>
+                                <span>Tampilkan Belum Verif</span>
+                            </button>
+
+                            <button 
+                                onClick={fetchData} // Refresh untuk ambil semua data lagi
+                                className="whitespace-nowrap px-4 py-2 rounded-xl bg-slate-50 text-slate-500 text-[10px] font-black uppercase tracking-wider border border-slate-100 active:scale-95 transition-all"
+                            >
+                                Semua Data
+                            </button>
+                        </div>
+                    )}
 
                     {/* Expandable Date Filter */}
                     {showFilter && (
@@ -328,14 +387,29 @@ const SPKPSelesai = ({ user, onBack }) => {
                             </div>
                         </div>
 
-                        {/* Footer Modal */}
-                        <div className="p-8 bg-white border-t border-slate-50">
+                        {/* Footer Modal Detail */}
+                        <div className="p-8 bg-white border-t border-slate-50 flex gap-3">
+                            {/* Tombol Tutup selalu ada */}
                             <button 
                                 onClick={() => setShowDetailModal(false)}
-                                className="w-full bg-slate-900 text-white py-5 rounded-[2rem] font-black text-sm uppercase tracking-widest active:scale-95 transition-all shadow-xl shadow-slate-200"
+                                className="flex-1 bg-slate-100 text-slate-500 py-5 rounded-[2rem] font-black text-[10px] uppercase tracking-widest active:scale-95 transition-all"
                             >
-                                Tutup Riwayat
+                                Kembali
                             </button>
+
+                            {/* Gunakan logika ini agar lebih aman */}
+                                {/* Logika: Tampilkan jika Role Kabag DAN IsVerif adalah Falsy (null, 0, false, atau undefined) */}
+                            {user?.role === 'KABAG_JARINGAN' && !selectedTask?.IsVerif && (
+                                <button 
+                                    onClick={() => handleVerifikasi(selectedTask.no_spkp)}
+                                    className="flex-[2] bg-emerald-600 text-white py-5 rounded-[2rem] font-black text-[10px] uppercase tracking-widest shadow-xl shadow-emerald-100 active:scale-95 transition-all flex items-center justify-center space-x-2"
+                                >
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />
+                                    </svg>
+                                    <span>Verifikasi Kerja</span>
+                                </button>
+                            )}
                         </div>
                     </div>
                 </div>
