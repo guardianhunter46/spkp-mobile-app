@@ -406,6 +406,20 @@ app.get('/api/spkp-selesai', async (req, res) => {
     }
 });
 
+app.get('/api/rekanan/:kocab', async (req, res) => {
+    try {
+        const { kocab } = req.params;
+        let pool = await sql.connect(dbConfig);
+        let result = await pool.request()
+            .input('kocab', sql.VarChar, kocab)
+            .query("SELECT DISTINCT pelaksana FROM vRekananMobile WHERE kocab = @kocab ORDER BY pelaksana ASC");
+        
+        res.json({ status: 'success', data: result.recordset });
+    } catch (err) {
+        res.status(500).json({ status: 'error', message: err.message });
+    }
+});
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log(`API berjalan di http://localhost:${PORT}`);

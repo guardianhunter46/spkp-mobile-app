@@ -8,6 +8,7 @@ const [listCabang, setListCabang] = useState([]);
 const [loading, setLoading] = useState(false);
 const [loadingCabang, setLoadingCabang] = useState(true);
 const [showSuccessAlert, setShowSuccessAlert] = useState(false);
+const [listRekanan, setListRekanan] = useState([]);
 
 // State untuk Form Tambah
 const [showForm, setShowForm] = useState(false);
@@ -20,48 +21,54 @@ username: '', password: '', role: '', cabang: '', kocab: '', pelaksana: ''
 // 1. Ambil daftar cabang (Dipakai Filter & Form)
 useEffect(() => {
 const fetchCabang = async () => {
-try {
-const response = await fetch('http://localhost:3000/list-cabang');
-const result = await response.json();
-if (result.status === 'success') {
-setListCabang(result.data);
-}
-} catch (error) {
-console.error("Gagal mengambil daftar cabang:", error);
-} finally {
-setLoadingCabang(false);
-}
+    try {
+        const response = await fetch('http://localhost:3000/list-cabang');
+        const result = await response.json();
+            if (result.status === 'success') {
+            setListCabang(result.data);
+            }
+        } catch (error) {
+        console.error("Gagal mengambil daftar cabang:", error);
+        } finally {
+        setLoadingCabang(false);
+        }
 };
 fetchCabang();
 }, []);
 
 // 2. Fungsi Filter: Ambil user untuk ditampilkan di List
 const fetchUsersByCabang = async (cabang) => {
-if (!cabang) {
-setUsers([]);
-return;
-}
-setLoading(true);
-try {
-const response = await fetch(`http://localhost:3000/users?cabang=${encodeURIComponent(cabang)}`);
-const data = await response.json();
-setUsers(data.status === 'success' ? data.data : []);
-} catch (error) {
-console.error("Error fetch users:", error);
-} finally {
-setLoading(false);
-}
+    if (!cabang) {
+        setUsers([]);
+        return;
+    }
+        setLoading(true);
+        try {
+    const response = await fetch(`http://localhost:3000/users?cabang=${encodeURIComponent(cabang)}`);
+    const data = await response.json();
+        setUsers(data.status === 'success' ? data.data : []);
+    }    catch (error) {
+        console.error("Error fetch users:", error);
+    } finally {
+    setLoading(false);
+    }
 };
 
 // 3. Fungsi Form: Handle Perubahan Cabang di Input Tambah (Auto-fill Kocab)
 const handleFormCabangChange = (e) => {
-const name = e.target.value;
-const found = listCabang.find(item => item.cabang === name);
-setFormData({
-...formData,
-cabang: name,
-kocab: found ? found.kocab : ''
-});
+    const selectedCabang = e.target.value;
+    const found = listCabang.find(c => c.cabang === selectedCabang);
+    const newKocab = found ? found.kocab : '';
+
+    setFormData({
+        ...formData,
+        cabang: selectedCabang,
+        kocab: newKocab,
+        pelaksana: '' // Reset pelaksana jika cabang ganti
+    });
+
+    // Panggil fetch rekanan berdasarkan kocab baru
+    fetchRekananByKocab(newKocab);
 };
 
 // 4. Submit Tambah User
@@ -119,6 +126,22 @@ const handleEditClick = (user) => {
     pelaksana: user.pelaksana || ''
   });
   setShowForm(true);
+};
+
+const fetchRekananByKocab = async (kocab) => {
+    if (!kocab) {
+        setListRekanan([]);
+        return;
+    }
+    try {
+        const response = await fetch(`http://localhost:3000/api/rekanan/${kocab}`);
+        const result = await response.json();
+        if (result.status === 'success') {
+            setListRekanan(result.data);
+        }
+    } catch (err) {
+        console.error("Gagal load rekanan:", err);
+    }
 };
 
 return (
@@ -332,22 +355,39 @@ return (
                     </div>
                 </div>
 
-                {/* Input Pelaksana */}
+                {/* Input Pelaksana (Sekarang menggunakan Select) */}
                 <div>
                     <label className="text-xs font-bold text-slate-400 uppercase tracking-wider ml-1">Nama Pelaksana</label>
-                    <input 
-                        type="text" 
-                        disabled={formData.role === 'ADMIN' || formData.role === 'KABAG_JARINGAN'} 
+                    <select 
+                        disabled={formData.role === 'ADMIN' || formData.role === 'KABAG_JARINGAN' || !formData.kocab} 
                         value={(formData.role === 'ADMIN' || formData.role === 'KABAG_JARINGAN') ? '' : formData.pelaksana}
-                        placeholder={(formData.role === 'ADMIN' || formData.role === 'KABAG_JARINGAN') ? "Otomatis NULL" : "Masukkan Nama Pelaksana"}
                         required={formData.role !== 'ADMIN' && formData.role !== 'KABAG_JARINGAN'}
-                        className={`w-full p-4 border border-slate-100 rounded-2xl transition-all duration-300 ${
+                        className={`w-full p-4 border border-slate-100 rounded-2xl transition-all duration-300 outline-none appearance-none ${
                             (formData.role === 'ADMIN' || formData.role === 'KABAG_JARINGAN') 
                             ? 'bg-slate-200 text-slate-400 cursor-not-allowed italic' 
-                            : 'bg-slate-50 text-slate-800 focus:ring-2 focus:ring-emerald-500 outline-none'
+                            : 'bg-slate-50 text-slate-800 focus:ring-2 focus:ring-emerald-500'
                         }`}
                         onChange={(e) => setFormData({...formData, pelaksana: e.target.value})} 
-                    />
+                    >
+                        {/* Logika Label Option */}
+                        { (formData.role === 'ADMIN' || formData.role === 'KABAG_JARINGAN') ? (
+                            <option value="">Otomatis NULL</option>
+                        ) : !formData.cabang ? (
+                            <option value="">-- Pilih Cabang Terlebih Dahulu --</option>
+                        ) : (
+                            <>
+                                <option value="">-- Pilih Pelaksana --</option>
+                                {listRekanan.map((r, i) => (
+                                    <option key={i} value={r.pelaksana}>{r.pelaksana}</option>
+                                ))}
+                            </>
+                        )}
+                    </select>
+                    
+                    {/* Info tambahan jika cabang sudah dipilih tapi rekanan kosong */}
+                    {!loading && formData.cabang && listRekanan.length === 0 && formData.role !== 'ADMIN' && (
+                        <p className="text-[10px] text-red-500 font-bold mt-1 ml-2">⚠️ Tidak ada rekanan di cabang ini</p>
+                    )}
                 </div>
 
                 {/* Submit Button */}
