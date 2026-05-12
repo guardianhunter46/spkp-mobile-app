@@ -61,7 +61,7 @@ const SPKPSelesai = ({ user, onBack }) => {
                     </svg>
                 </button>
                 <div>
-                    <h2 className="text-white text-xl font-black tracking-tight">Riwayat Selesai</h2>
+                    <h2 className="text-white text-xl font-black tracking-tight">SPKP Selesai</h2>
                     <div className="flex items-center space-x-2 mt-1">
                         <span className="w-2 h-2 bg-white rounded-full animate-pulse"></span>
                         <p className="text-white/80 text-[9px] font-black uppercase tracking-[0.2em]">Tugas Telah Tuntas</p>
@@ -87,17 +87,21 @@ const SPKPSelesai = ({ user, onBack }) => {
                             key={item.no_spkp} 
                             onClick={() => { setSelectedTask(item); setShowDetailModal(true); }}
                             className="bg-white rounded-[2.5rem] shadow-sm border border-slate-100 overflow-hidden active:scale-[0.98] transition-all border-l-8 border-l-emerald-500"
-                        >
+                         >
                             <div className="p-6">
+                                {/* Header Card */}
                                 <div className="flex justify-between items-start mb-4">
                                     <div>
                                         <span className="text-[9px] font-black text-slate-400 uppercase tracking-tighter">No. SPKP</span>
                                         <h3 className="text-lg font-black text-slate-800 leading-none">{item.no_spkp}</h3>
                                     </div>
-                                    <span className="bg-emerald-100 text-emerald-600 px-3 py-1 rounded-full text-[9px] font-black">SELESAI</span>
+                                    <span className="bg-emerald-100 text-emerald-600 px-3 py-1 rounded-full text-[9px] font-black italic">
+                                        SELESAI
+                                    </span>
                                 </div>
                                 
-                                <div className="grid grid-cols-2 gap-4 border-t border-slate-50 pt-4">
+                                {/* Detail Pelanggan & Tgl */}
+                                <div className="grid grid-cols-2 gap-4 border-t border-slate-50 pt-4 pb-4">
                                     <div>
                                         <span className="text-[9px] text-slate-400 font-bold uppercase">Pelanggan</span>
                                         <p className="text-xs font-bold text-slate-700 truncate">{item.nama_plg}</p>
@@ -106,6 +110,40 @@ const SPKPSelesai = ({ user, onBack }) => {
                                         <span className="text-[9px] text-slate-400 font-bold uppercase">Tgl SPKP</span>
                                         <p className="text-xs font-bold text-slate-700">
                                             {item.tgl_spkp ? new Date(item.tgl_spkp).toLocaleDateString('id-ID') : '-'}
+                                        </p>
+                                    </div>
+                                </div>
+
+                                {/* NOTED VERIFIKASI (BAGIAN BARU) */}
+                                <div className={`mt-2 p-3 rounded-2xl flex items-center space-x-2 border ${
+                                    item.IsVerif == 1 || item.IsVerif == "1" 
+                                    ? 'bg-emerald-50 border-emerald-100' 
+                                    : 'bg-orange-50 border-orange-100'
+                                }`}>
+                                    {/* Icon Status */}
+                                    <div className={`w-6 h-6 rounded-full flex items-center justify-center ${
+                                        item.IsVerif == 1 || item.IsVerif == "1" ? 'bg-emerald-500' : 'bg-orange-500'
+                                    }`}>
+                                        {item.IsVerif == 1 || item.IsVerif == "1" ? (
+                                            <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="4" d="M5 13l4 4L19 7" />
+                                            </svg>
+                                        ) : (
+                                            <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="4" d="M12 8v4l3 3" />
+                                            </svg>
+                                        )}
+                                    </div>
+
+                                    {/* Teks Status */}
+                                    <div>
+                                        <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest block leading-none mb-1">
+                                            Status Verifikasi
+                                        </span>
+                                        <p className={`text-[10px] font-black uppercase tracking-tight ${
+                                            item.IsVerif == 1 || item.IsVerif == "1" ? 'text-emerald-700' : 'text-orange-700'
+                                        }`}>
+                                            {item.IsVerif == 1 || item.IsVerif == "1" ? 'Sudah Diverifikasi Kabag' : 'Menunggu Verif Kabag Jaringan'}
                                         </p>
                                     </div>
                                 </div>

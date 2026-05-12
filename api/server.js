@@ -399,6 +399,8 @@ app.get('/api/spkp-selesai', async (req, res) => {
                 AND perusahaan_rekanan = @pelaksana
                 ORDER BY tgl_spkp DESC
             `);
+        // TAMBAHKAN INI UNTUK DEBUG
+        console.log("Contoh Data Pertama:", result.recordset[0]);
 
         res.json({ status: 'success', data: result.recordset });
     } catch (err) {
