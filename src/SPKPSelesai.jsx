@@ -33,6 +33,7 @@ const SPKPSelesai = ({ user, onBack }) => {
     const [selectedTask, setSelectedTask] = useState(null);
     const [showDetailModal, setShowDetailModal] = useState(false);
     const [previewImage, setPreviewImage] = useState(null); // Menyimpan URL foto untuk di-zoom
+    const [activeQuickFilter, setActiveQuickFilter] = useState('all'); // defaultnya 'all'
     
     const [filter, setFilter] = useState({
     search: '',
@@ -161,25 +162,40 @@ const SPKPSelesai = ({ user, onBack }) => {
 
                     {/* --- TAMBAHKAN DI SINI (HANYA UNTUK KABAG) --- */}
                     {user?.role === 'KABAG_JARINGAN' && (
-                        <div className="mt-4 pt-4 border-t border-slate-50 flex items-center space-x-2 overflow-x-auto scrollbar-hide">
+                        <div className="mt-4 pt-4 border-t border-slate-50 flex justify-center items-center gap-3 pb-2">
+                            
+                            {/* Tombol BELUM VERIFIKASI */}
                             <button 
                                 onClick={() => {
-                                    // Logika filter: ambil data yang IsVerif-nya kosong saja
                                     const belumVerif = listSelesai.filter(item => !item.IsVerif);
                                     setListSelesai(belumVerif);
+                                    setActiveQuickFilter('unverified');
                                 }}
-                                className="whitespace-nowrap px-4 py-2 rounded-xl bg-orange-50 text-orange-600 text-[10px] font-black uppercase tracking-wider border border-orange-100 active:scale-95 transition-all flex items-center space-x-2"
+                                className={`flex-1 max-w-[160px] px-4 py-3 rounded-2xl text-[10px] font-black uppercase tracking-wider transition-all duration-500 ease-in-out border-2 flex items-center justify-center space-x-2 ${
+                                    activeQuickFilter === 'unverified' 
+                                    ? 'bg-orange-500 text-white border-orange-500 shadow-lg shadow-orange-200 scale-105 z-10' 
+                                    : 'bg-orange-50 text-orange-600 border-orange-100 hover:bg-orange-100 scale-100'
+                                }`}
                             >
-                                <span className="relative flex h-2 w-2">
+                                {/* Dot Indicator yang halus */}
+                                <div className={`relative flex h-2 w-2 transition-opacity duration-500 ${activeQuickFilter === 'unverified' ? 'opacity-0 w-0' : 'opacity-100'}`}>
                                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span>
                                     <span className="relative inline-flex rounded-full h-2 w-2 bg-orange-500"></span>
-                                </span>
-                                <span>Tampilkan Belum Verif</span>
+                                </div>
+                                <span>Belum Verifikasi</span>
                             </button>
 
+                            {/* Tombol SEMUA DATA */}
                             <button 
-                                onClick={fetchData} // Refresh untuk ambil semua data lagi
-                                className="whitespace-nowrap px-4 py-2 rounded-xl bg-slate-50 text-slate-500 text-[10px] font-black uppercase tracking-wider border border-slate-100 active:scale-95 transition-all"
+                                onClick={() => {
+                                    fetchData();
+                                    setActiveQuickFilter('all');
+                                }}
+                                className={`flex-1 max-w-[160px] px-4 py-3 rounded-2xl text-[10px] font-black uppercase tracking-wider transition-all duration-500 ease-in-out border-2 flex items-center justify-center ${
+                                    activeQuickFilter === 'all' 
+                                    ? 'bg-slate-900 text-white border-slate-900 shadow-lg shadow-slate-200 scale-105 z-10' 
+                                    : 'bg-slate-50 text-slate-500 border-slate-100 hover:bg-slate-100 scale-100'
+                                }`}
                             >
                                 Semua Data
                             </button>

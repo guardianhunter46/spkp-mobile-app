@@ -74,7 +74,7 @@ return (
         </div>
     </div>
 
-    {/* Info Status / Absensi Terakhir */}
+    {/* Info Status*/}
     <div className="px-6 mt-10">
         <div className="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-100 relative overflow-hidden">
             <div className="absolute top-0 right-0 p-4">
