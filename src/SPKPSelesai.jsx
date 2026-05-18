@@ -105,145 +105,148 @@ const SPKPSelesai = ({ user, onBack }) => {
     };
 
     return (
-        <div className="min-h-screen bg-slate-50 pb-10">
-            {/* Header Gradasi - Tema Orange */}
-            <div className="bg-gradient-to-br from-orange-500 via-orange-600 to-rose-500 p-8 rounded-b-[2.5rem] shadow-lg shadow-orange-100 flex items-center">
-                <button onClick={onBack} className="p-2 bg-white/20 backdrop-blur-md rounded-xl text-white mr-4 active:scale-90 transition-transform border border-white/20">
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
-                    </svg>
-                </button>
-                <div>
-                    {/* LOGIKA ROLE DI SINI */}
-                    <h2 className="text-white text-xl font-black tracking-tight">
-                        {user?.role === 'KABAG_JARINGAN' ? 'Verifikasi Pekerjaan' : 'SPKP Selesai'}
-                    </h2>
-                    <div className="flex items-center space-x-2 mt-1">
-                        <span className="w-2 h-2 bg-white rounded-full animate-pulse"></span>
-                        <p className="text-white/80 text-[9px] font-black uppercase tracking-[0.2em]">
-                            {user?.role === 'KABAG_JARINGAN' ? 'Mode Supervisor' : 'Tugas Telah Tuntas'}
-                        </p>
+        <div className="flex flex-col h-screen bg-slate-50 overflow-hidden">
+            <div className="sticky top-0 z-50 bg-slate-50">
+                {/* Header Gradasi - Tema Orange */}
+                <div className="bg-gradient-to-br from-orange-500 via-orange-600 to-rose-500 p-8 rounded-b-[2.5rem] shadow-lg shadow-orange-100 flex items-center">
+                    <button onClick={onBack} className="p-2 bg-white/20 backdrop-blur-md rounded-xl text-white mr-4 active:scale-90 transition-transform border border-white/20">
+                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
+                        </svg>
+                    </button>
+                    <div>
+                        {/* LOGIKA ROLE DI SINI */}
+                        <h2 className="text-white text-xl font-black tracking-tight">
+                            {user?.role === 'KABAG_JARINGAN' ? 'Verifikasi Pekerjaan' : 'SPKP Selesai'}
+                        </h2>
+                        <div className="flex items-center space-x-2 mt-1">
+                            <span className="w-2 h-2 bg-white rounded-full animate-pulse"></span>
+                            <p className="text-white/80 text-[9px] font-black uppercase tracking-[0.2em]">
+                                {user?.role === 'KABAG_JARINGAN' ? 'Mode Supervisor' : 'Tugas Telah Tuntas'}
+                            </p>
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            {/* SEARCH & FILTER SECTION */}
-            <div className="px-6 -mt-6">
-                <div className="bg-white rounded-[2rem] shadow-xl p-4 border border-slate-100">
-                    <div className="flex items-center space-x-3">
-                        {/* Input Search */}
-                        <div className="relative flex-1">
-                            <span className="absolute left-4 top-3.5 text-slate-400">🔍</span>
-                            <input 
-                                type="text"
-                                placeholder="Cari No. SPKP..."
-                                className="w-full bg-slate-50 border-none rounded-2xl py-3.5 pl-10 pr-4 text-xs font-bold text-slate-700 focus:ring-2 focus:ring-orange-500 transition-all"
-                                value={filter.search}
-                                onChange={(e) => setFilter({...filter, search: e.target.value})}
-                            />
-                        </div>
-                        
-                        {/* Toggle Button Filter Tanggal */}
-                        <button 
-                            onClick={() => setShowFilter(!showFilter)}
-                            className={`p-3.5 rounded-2xl transition-all ${showFilter ? 'bg-orange-500 text-white' : 'bg-orange-50 text-orange-600'}`}
-                        >
-                            📅
-                        </button>
-
-                        {/* Submit Button */}
-                        <button 
-                            onClick={fetchData}
-                            className="bg-slate-900 text-white px-6 py-3.5 rounded-2xl text-[10px] font-black uppercase tracking-widest active:scale-95 transition-all"
-                        >
-                            Cari
-                        </button>
-                    </div>
-
-                    {/* --- TAMBAHKAN DI SINI (HANYA UNTUK KABAG) --- */}
-                    {user?.role === 'KABAG_JARINGAN' && (
-                        <div className="mt-4 pt-4 border-t border-slate-50 flex justify-center items-center gap-3 pb-2">
-                            
-                            {/* Tombol BELUM VERIFIKASI */}
-                            <button 
-                                onClick={() => {
-                                    const belumVerif = listSelesai.filter(item => !item.IsVerif);
-                                    setListSelesai(belumVerif);
-                                    setActiveQuickFilter('unverified');
-                                }}
-                                className={`flex-1 max-w-[160px] px-4 py-3 rounded-2xl text-[10px] font-black uppercase tracking-wider transition-all duration-500 ease-in-out border-2 flex items-center justify-center space-x-2 ${
-                                    activeQuickFilter === 'unverified' 
-                                    ? 'bg-orange-500 text-white border-orange-500 shadow-lg shadow-orange-200 scale-105 z-10' 
-                                    : 'bg-orange-50 text-orange-600 border-orange-100 hover:bg-orange-100 scale-100'
-                                }`}
-                            >
-                                {/* Dot Indicator yang halus */}
-                                <div className={`relative flex h-2 w-2 transition-opacity duration-500 ${activeQuickFilter === 'unverified' ? 'opacity-0 w-0' : 'opacity-100'}`}>
-                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span>
-                                    <span className="relative inline-flex rounded-full h-2 w-2 bg-orange-500"></span>
-                                </div>
-                                <span>Belum Verifikasi</span>
-                            </button>
-
-                            {/* Tombol SEMUA DATA */}
-                            <button 
-                                onClick={() => {
-                                    fetchData();
-                                    setActiveQuickFilter('all');
-                                }}
-                                className={`flex-1 max-w-[160px] px-4 py-3 rounded-2xl text-[10px] font-black uppercase tracking-wider transition-all duration-500 ease-in-out border-2 flex items-center justify-center ${
-                                    activeQuickFilter === 'all' 
-                                    ? 'bg-slate-900 text-white border-slate-900 shadow-lg shadow-slate-200 scale-105 z-10' 
-                                    : 'bg-slate-50 text-slate-500 border-slate-100 hover:bg-slate-100 scale-100'
-                                }`}
-                            >
-                                Semua Data
-                            </button>
-                        </div>
-                    )}
-
-                    {/* Expandable Date Filter */}
-                    {showFilter && (
-                        <div className="mt-4 pt-4 border-t border-dashed border-slate-200 animate-in slide-in-from-top-2 duration-300">
-                            <p className="text-[9px] font-black text-slate-400 uppercase mb-3 ml-1 tracking-widest">Rentang Tanggal SPKP</p>
-                            <div className="grid grid-cols-2 gap-3">
-                                <div className="space-y-1">
-                                    <label className="text-[8px] font-bold text-slate-400 ml-2 uppercase">Dari</label>
-                                    <input 
-                                        type="date" 
-                                        className="w-full bg-slate-50 border-none rounded-xl p-3 text-xs font-bold text-slate-600"
-                                        value={filter.startDate}
-                                        onChange={(e) => setFilter({...filter, startDate: e.target.value})}
-                                    />
-                                </div>
-                                <div className="space-y-1">
-                                    <label className="text-[8px] font-bold text-slate-400 ml-2 uppercase">Sampai</label>
-                                    <input 
-                                        type="date" 
-                                        className="w-full bg-slate-50 border-none rounded-xl p-3 text-xs font-bold text-slate-600"
-                                        value={filter.endDate}
-                                        onChange={(e) => setFilter({...filter, endDate: e.target.value})}
-                                    />
-                                </div>
+                {/* SEARCH & FILTER SECTION */}
+                <div className="px-6 -mt-6">
+                    <div className="bg-white rounded-[2rem] shadow-xl p-4 border border-slate-100">
+                        <div className="flex items-center space-x-3">
+                            {/* Input Search */}
+                            <div className="relative flex-1">
+                                <span className="absolute left-4 top-3.5 text-slate-400">🔍</span>
+                                <input 
+                                    type="text"
+                                    placeholder="Cari No. SPKP..."
+                                    className="w-full bg-slate-50 border-none rounded-2xl py-3.5 pl-10 pr-4 text-xs font-bold text-slate-700 focus:ring-2 focus:ring-orange-500 transition-all"
+                                    value={filter.search}
+                                    onChange={(e) => setFilter({...filter, search: e.target.value})}
+                                />
                             </div>
                             
-                            {/* Reset Button */}
+                            {/* Toggle Button Filter Tanggal */}
                             <button 
-                                onClick={() => {
-                                    setFilter({search: '', startDate: '', endDate: ''});
-                                    setShowFilter(false);
-                                }}
-                                className="w-full mt-4 text-[9px] font-black text-rose-500 uppercase tracking-widest py-2 italic"
+                                onClick={() => setShowFilter(!showFilter)}
+                                className={`p-3.5 rounded-2xl transition-all ${showFilter ? 'bg-orange-500 text-white' : 'bg-orange-50 text-orange-600'}`}
                             >
-                                × Bersihkan Filter
+                                📅
+                            </button>
+
+                            {/* Submit Button */}
+                            <button 
+                                onClick={fetchData}
+                                className="bg-slate-900 text-white px-6 py-3.5 rounded-2xl text-[10px] font-black uppercase tracking-widest active:scale-95 transition-all"
+                            >
+                                Cari
                             </button>
                         </div>
-                    )}
+
+                        {/* --- TAMBAHKAN DI SINI (HANYA UNTUK KABAG) --- */}
+                        {user?.role === 'KABAG_JARINGAN' && (
+                            <div className="mt-4 pt-4 border-t border-slate-50 flex justify-center items-center gap-3 pb-2">
+                                
+                                {/* Tombol BELUM VERIFIKASI */}
+                                <button 
+                                    onClick={() => {
+                                        const belumVerif = listSelesai.filter(item => !item.IsVerif);
+                                        setListSelesai(belumVerif);
+                                        setActiveQuickFilter('unverified');
+                                    }}
+                                    className={`flex-1 max-w-[160px] px-4 py-3 rounded-2xl text-[10px] font-black uppercase tracking-wider transition-all duration-500 ease-in-out border-2 flex items-center justify-center space-x-2 ${
+                                        activeQuickFilter === 'unverified' 
+                                        ? 'bg-orange-500 text-white border-orange-500 shadow-lg shadow-orange-200 scale-105 z-10' 
+                                        : 'bg-orange-50 text-orange-600 border-orange-100 hover:bg-orange-100 scale-100'
+                                    }`}
+                                >
+                                    {/* Dot Indicator yang halus */}
+                                    <div className={`relative flex h-2 w-2 transition-opacity duration-500 ${activeQuickFilter === 'unverified' ? 'opacity-0 w-0' : 'opacity-100'}`}>
+                                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span>
+                                        <span className="relative inline-flex rounded-full h-2 w-2 bg-orange-500"></span>
+                                    </div>
+                                    <span>Belum Verifikasi</span>
+                                </button>
+
+                                {/* Tombol SEMUA DATA */}
+                                <button 
+                                    onClick={() => {
+                                        fetchData();
+                                        setActiveQuickFilter('all');
+                                    }}
+                                    className={`flex-1 max-w-[160px] px-4 py-3 rounded-2xl text-[10px] font-black uppercase tracking-wider transition-all duration-500 ease-in-out border-2 flex items-center justify-center ${
+                                        activeQuickFilter === 'all' 
+                                        ? 'bg-slate-900 text-white border-slate-900 shadow-lg shadow-slate-200 scale-105 z-10' 
+                                        : 'bg-slate-50 text-slate-500 border-slate-100 hover:bg-slate-100 scale-100'
+                                    }`}
+                                >
+                                    Semua Data
+                                </button>
+                            </div>
+                        )}
+
+                        {/* Expandable Date Filter */}
+                        {showFilter && (
+                            <div className="mt-4 pt-4 border-t border-dashed border-slate-200 animate-in slide-in-from-top-2 duration-300">
+                                <p className="text-[9px] font-black text-slate-400 uppercase mb-3 ml-1 tracking-widest">Rentang Tanggal SPKP</p>
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div className="space-y-1">
+                                        <label className="text-[8px] font-bold text-slate-400 ml-2 uppercase">Dari</label>
+                                        <input 
+                                            type="date" 
+                                            className="w-full bg-slate-50 border-none rounded-xl p-3 text-xs font-bold text-slate-600"
+                                            value={filter.startDate}
+                                            onChange={(e) => setFilter({...filter, startDate: e.target.value})}
+                                        />
+                                    </div>
+                                    <div className="space-y-1">
+                                        <label className="text-[8px] font-bold text-slate-400 ml-2 uppercase">Sampai</label>
+                                        <input 
+                                            type="date" 
+                                            className="w-full bg-slate-50 border-none rounded-xl p-3 text-xs font-bold text-slate-600"
+                                            value={filter.endDate}
+                                            onChange={(e) => setFilter({...filter, endDate: e.target.value})}
+                                        />
+                                    </div>
+                                </div>
+                                
+                                {/* Reset Button */}
+                                <button 
+                                    onClick={() => {
+                                        setFilter({search: '', startDate: '', endDate: ''});
+                                        setShowFilter(false);
+                                    }}
+                                    className="w-full mt-4 text-[9px] font-black text-rose-500 uppercase tracking-widest py-2 italic"
+                                >
+                                    × Bersihkan Filter
+                                </button>
+                            </div>
+                        )}
+                    </div>
                 </div>
             </div>
+            
 
             {/* List Tugas Selesai */}
-            <div className="px-6 mt-8 space-y-6">
+            <div className="flex-1 overflow-y-auto px-6 pt-6 pb-24 scroll-smooth space-y-4">
                 {loading ? (
                     <div className="text-center py-20">
                         <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-orange-500 mx-auto"></div>

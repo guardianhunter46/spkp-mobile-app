@@ -180,9 +180,9 @@ const SPKPProses = ({ user, onBack }) => {
     };
 
     return (
-        <div className="min-h-screen bg-slate-50 pb-10">
+        <div className="flex flex-col h-screen bg-slate-50 overflow-hidden">
             {/* Header - Identik dengan SPKPList */}
-            <div className="bg-gradient-to-r from-purple-600 to-indigo-600 p-8 rounded-b-[2.5rem] shadow-lg flex items-center">
+            <div className="sticky top-0 z-50 bg-gradient-to-r from-purple-600 to-indigo-600 p-8 rounded-b-[2.5rem] shadow-lg flex items-center">
                 <button onClick={onBack} className="p-2 bg-white/20 rounded-xl text-white mr-4 active:scale-90 transition-transform">
                     <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
@@ -195,7 +195,7 @@ const SPKPProses = ({ user, onBack }) => {
             </div>
 
             {/* Content Area */}
-            <div className="px-6 mt-8">
+            <div className="flex-1 overflow-y-auto px-6 pt-6 pb-24 scroll-smooth">
                 {loading && (
                     <div className="text-center font-bold text-purple-600 animate-pulse py-10">
                         Menarik data tugas...
@@ -293,10 +293,26 @@ const SPKPProses = ({ user, onBack }) => {
                                     <span className="text-[9px] font-black text-slate-400 uppercase tracking-tighter">NPA</span>
                                     <p className="text-xs font-bold text-slate-700 leading-tight">{selectedTask.npa || '-'}</p>
                                 </div>
-                                <div className="col-span-2 pt-2 border-t border-slate-200/50">
-                                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-tighter">Pekerjaan</span>
-                                    <p className="text-xs font-bold text-slate-700 leading-tight">{selectedTask.ket_pekerjaan || '-'}</p>
+
+                                <div>
+                                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-tighter block mb-1">
+                                        Pekerjaan
+                                    </span>
+                                    <p className="text-xs font-bold text-slate-700 leading-tight">
+                                        {selectedTask.ket_pekerjaan || '-'}
+                                    </p>
                                 </div>
+
+                                {/* Kolom Kanan: Sektor BPPB (Dibuat rata kanan/text-right) */}
+                                <div className="text-right">
+                                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-tighter block mb-1">
+                                        NO. BPPB
+                                    </span>
+                                    <p className="text-xs font-bold text-slate-700 leading-tight">
+                                        {selectedTask.no_bppb || '-'}
+                                    </p>
+                                </div>
+                                
                                 <div className="col-span-2">
                                     <span className="text-[9px] font-black text-slate-400 uppercase tracking-tighter">Lokasi</span>
                                     <p className="text-xs font-bold text-slate-700 leading-tight">{selectedTask.lokasi || '-'}</p>
